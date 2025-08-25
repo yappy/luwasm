@@ -1,4 +1,6 @@
-# WASM
+# Emscripten 情報
+
+## WASM
 
 Web Assembly.
 
@@ -87,11 +89,11 @@ int factorial(int n) {
     * いろいろ雑多な処理をいい感じに一発でやってくれる系
     * C/C++ を入れると壊れがちかも…
 
-## Emscripten
+## Emscripten 公式サイト
 
 <https://emscripten.org/>
 
-### Emscripten - インストール
+## インストール
 
 `apt` にあるので、少々古いバージョンでもよいからとりあえずちょっと試してみたい場合は
 そちらで。
@@ -114,7 +116,7 @@ source ./emsdk_env.sh
 
 アンインストールは `git clean` とかリポジトリごと全部消すとかだけで完了。
 
-### Emcripten - 基本的な使い方
+## 基本的な使い方
 
 `emcc` が `gcc` `clang` と同じ雰囲気で使えるフロントエンドコマンド。
 
@@ -157,7 +159,7 @@ hello
 
 基本的なオプションはおそらく gcc, clang とだいたい同じのはず。
 
-### Emcripten - 出力フォーマット
+## 出力フォーマット
 
 出力ファイル名は gcc 系統と同じく `-o <FILENAME>` で変更できる。
 この時、拡張子を特定のものにすることで出力方式が自動で変化する。
@@ -187,3 +189,27 @@ HTML からロードするやり方の参考にもなる。
   * WASM のロードと実行コード。
 * `*.html`
   * `*.js` コードの使い方サンプル兼テスト UI HTML。
+
+## Module object
+
+<https://emscripten.org/docs/api_reference/module.html>
+
+`-o *.html` で出力される HTML を読んだ方が早いかもしれない。
+
+`Module` という名前のグローバルオブジェクトを定義しておくと
+WASM コードの実行環境をカスタマイズすることができる。
+`*.js` では `Module` という名前のグローバル変数は定義しておらず、
+存在しているか確認して存在するならばそれを使うようなコードになっている。
+
+分かりやすいところで言うと stdout, stderr への出力を自前の関数に置き換えられる。
+
+```js
+var Module = {
+  'print': function(text) { alert('stdout: ' + text) },
+  'printErr': function(text) { alert('stderr: ' + text) }
+};
+```
+
+HTML 中の `<script>` タグで `Module` をグローバルに定義した後、
+`<script async type="text/javascript" src="hello.js"></script>` のように
+emcc の吐いた `*js` ファイルを読み込めば OK。
