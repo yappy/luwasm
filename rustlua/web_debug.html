@@ -1,0 +1,51 @@
+<!doctype html>
+
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Emscripten-Generated Code</title>
+  </head>
+
+  <body>
+    <label for="source">Lua Source</label><br>
+    <textarea id="source" rows="15" cols="80">print('hello lua')&NewLine;</textarea><br>
+    <button id="run">Run</button><br><br>
+
+    <label for="stdout">stdout</label><br>
+    <textarea id="stdout" rows="5" cols="80" readonly></textarea><br>
+    <label for="stderr">stderr</label><br>
+    <textarea id="stderr" rows="5" cols="80" readonly></textarea><br>
+
+    <hr>
+    <p>
+        WASM load may be failed due to sercurity reason.
+        <strong>python3 -m http.server</strong> is recommended.
+    </p>
+
+    <script type='text/javascript'>
+      var outElement = document.getElementById('stdout');
+      if (outElement) outElement.value = ''; // clear browser cache
+      var errElement = document.getElementById('stderr');
+      if (errElement) errElement.value = ''; // clear browser cache
+
+      var Module = {
+        print(...args) {
+          if (outElement) {
+            var text = args.join(' ');
+            outElement.value += text + "\n";
+            outElement.scrollTop = outElement.scrollHeight; // focus on bottom
+          }
+        },
+        printErr(...args) {
+          if (errElement) {
+            var text = args.join(' ');
+            errElement.value += text + "\n";
+            errElement.scrollTop = errElement.scrollHeight; // focus on bottom
+          }
+        },
+      };
+    </script>
+    <script async type="text/javascript" src="target/wasm32-unknown-emscripten/debug/rustlua.js"></script>
+  </body>
+</html>
