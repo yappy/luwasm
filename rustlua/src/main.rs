@@ -1,6 +1,5 @@
 mod emscripten;
 
-use anyhow::Result;
 use mlua::{Lua, LuaOptions, StdLib};
 
 fn print_test() {
@@ -15,13 +14,17 @@ fn print_test() {
     emscripten::log(emscripten::LogTarget::ConsoleDebug, "console.debug");
 }
 
-fn lua_test() -> Result<()> {
+fn lua_test() -> anyhow::Result<()> {
+    lua_exec("print('Hello Lua!')")?;
+    lua_exec("this is not lua source")?;
+
+    Ok(())
+}
+
+fn lua_exec(src: &str) -> anyhow::Result<()> {
     let libs = StdLib::ALL_SAFE;
     let options = LuaOptions::new().catch_rust_panics(true);
     let lua = Lua::new_with(libs, options)?;
-
-    let chunk = lua.load("print('Hello Lua!')");
-    chunk.exec()?;
 
     /*
      * source: the source of the chunk that created the function.
@@ -34,7 +37,7 @@ fn lua_test() -> Result<()> {
      */
     // not compiled yet
     // by default, Rust file:line:column (for panic) will be used for name
-    let chunk = lua.load("this is not lua source").set_name("=<string>");
+    let chunk = lua.load(src).set_name("=<STR_SRC>");
     // compile and execute
     chunk.exec()?;
 
@@ -42,18 +45,47 @@ fn lua_test() -> Result<()> {
 }
 
 fn set_callback() {
-    if let Err(err) = emscripten::set_click_callback("#run", |event_type, _| {
-        println!("event_type: {}", event_type);
+    let res = emscripten::set_click_callback("#run", |_, _| {
+        println!("clicked");
+        let src = emscripten::eval_js(
+            r"
+function f() {
+    if (!document) return null;
+    var e = document.getElementById('source');
+    if (!e) return null;
+    return e.value;
+}
+f()
+",
+        );
+        let src = if let Some(src) = src {
+            src
+        } else {
+            eprintln!("Get source failed");
+            return false;
+        };
+
+        match lua_exec(&src) {
+            Ok(()) => {
+                println!("Lua executed successfully");
+                println!();
+            }
+            Err(err) => {
+                println!("{err}");
+                println!();
+            }
+        }
 
         false
-    }) {
+    });
+    if let Err(err) = res {
         println!("{err}");
-    }else {
+    } else {
         println!("set_click_callback ok");
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     print_test();
     set_callback();
     lua_test()?;

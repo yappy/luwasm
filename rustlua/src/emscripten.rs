@@ -35,6 +35,18 @@ pub fn log(target: LogTarget, msg: &str) {
     }
 }
 
+/// Warning: if js code throws exception, it causes undefined behavior.
+pub fn eval_js(src: &str) -> Option<String> {
+    let src = CString::new(src).unwrap();
+    let p = unsafe { ffi::emscripten_run_script_string(src.as_ptr()) };
+    if !p.is_null() {
+        let s = unsafe { ::std::ffi::CStr::from_ptr(p) };
+        Some(s.to_str().unwrap().to_string())
+    } else {
+        None
+    }
+}
+
 pub use ffi::EmscriptenMouseEvent as MouseEvent;
 
 /// * `target`: CSS selector like `#id`
