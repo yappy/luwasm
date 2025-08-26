@@ -2,6 +2,8 @@ mod emscripten;
 
 use mlua::{Lua, LuaOptions, StdLib};
 
+use crate::emscripten::setup_logger;
+
 fn print_test() {
     println!("println to stdout");
     eprintln!("eprintln to stderr");
@@ -12,6 +14,12 @@ fn print_test() {
     emscripten::log(emscripten::LogTarget::ConsoleWarn, "console.warn");
     emscripten::log(emscripten::LogTarget::ConsoleInfo, "console.info");
     emscripten::log(emscripten::LogTarget::ConsoleDebug, "console.debug");
+
+    log::error!("log::error");
+    log::warn!("log::warn");
+    log::info!("log::info");
+    log::debug!("log::debug");
+    log::trace!("log::trace");
 }
 
 fn lua_test() -> anyhow::Result<()> {
@@ -86,7 +94,7 @@ f()
 }
 
 fn main_loop_raw() {
-    emscripten::log(emscripten::LogTarget::ConsoleDebug, "frame");
+    log::trace!("frame");
 }
 
 fn setup_main_loop() {
@@ -94,6 +102,8 @@ fn setup_main_loop() {
 }
 
 fn main() -> anyhow::Result<()> {
+    setup_logger(log::LevelFilter::Trace);
+
     print_test();
     set_callback_button_clicked();
     if let Err(err) = lua_test() {
