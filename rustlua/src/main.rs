@@ -1,3 +1,5 @@
+mod em;
+
 use anyhow::Result;
 use mlua::{Lua, LuaOptions, StdLib};
 

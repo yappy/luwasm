@@ -96,3 +96,26 @@ Emscripten でのビルドを個別にサポートしてくれているという
 
 その他、`anyhow` や `serde` 等、便利そうなフィーチャーが
 デフォルト OFF で用意されている。
+
+## トラブルシューティング
+
+### bindgen で関数が無視される
+
+<https://github.com/rust-lang/rust-bindgen/issues/751#issuecomment-496891269>
+
+target = wasm32 の場合、デフォルトが `fvisibility=hidden` になるのが原因らしい。
+これは elf 中のシンボルに設定できる可視属性で、
+最近 (いつ？) は大量のシンボルのせいで解決が遅くなるのを防ぐため、
+特に共有ライブラリでは推奨されているらしい。
+
+これのせいで bindgen を build.rs から呼んだ場合
+(build target = wasm32 を引き継ぐ) と
+bindgen-cli をコマンドラインで clang-args (`--` の後) にターゲットを wasm32 で
+指定した場合のみ関数が処理されず無視されてしまう。
+bindgen は libclang を使用しておりその時点で hidden 属性がついてしまうらしい。
+
+`bindgen header.h -- -target wasm32-unknown-emscripten`
+
+解決方法としては `-fvisibility=default` を bindgen 時に clang 引数として渡す。
+
+~~やめてくれ～~~
