@@ -1,10 +1,17 @@
-mod em;
+mod emscripten;
 
 use anyhow::Result;
 use mlua::{Lua, LuaOptions, StdLib};
 
 fn main() -> Result<()> {
     println!("Hello, world!");
+
+    emscripten::log(emscripten::LogTarget::ModuleOut, "stdout");
+    emscripten::log(emscripten::LogTarget::ModuleErr, "stderr");
+    emscripten::log(emscripten::LogTarget::ConsoleError, "console.error");
+    emscripten::log(emscripten::LogTarget::ConsoleWarn, "console.warn");
+    emscripten::log(emscripten::LogTarget::ConsoleInfo, "console.info");
+    emscripten::log(emscripten::LogTarget::ConsoleDebug, "console.debug");
 
     let libs = StdLib::ALL_SAFE;
     let options = LuaOptions::new().catch_rust_panics(true);
@@ -23,7 +30,7 @@ fn main() -> Result<()> {
     // the source in a user-dependent manner.
     // Otherwise, the function was defined in a string
     // where source is that string.
-    let chunk = lua.load("lexical error").set_name("=<string>");
+    let chunk = lua.load("this is not lua source").set_name("=<string>");
     // compile and execute
     chunk.exec()?;
 
