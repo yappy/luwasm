@@ -47,8 +47,39 @@ pub fn eval_js(src: &str) -> Option<String> {
     }
 }
 
+/// <https://emscripten.org/docs/api_reference/emscripten.h.html#c.emscripten_set_main_loop>
+pub fn set_main_loop<F>(fps: i32, func: F)
+where
+    F: FnMut() + 'static,
+{
+    thread_local! {
+        // global Option<FnMut()->()>
+        static MAIN_LOOP_FUNC: RefCell<Option<Box<dyn FnMut()>>> = RefCell::new(None);
+    }
+    extern "C" fn main_loop_func() {
+        MAIN_LOOP_FUNC.with(|cell| {
+            let mut func = cell.borrow_mut();
+            if let Some(f) = func.as_mut() {
+                f();
+            }
+        });
+    }
+
+    MAIN_LOOP_FUNC.with(|cell| {
+        let mut f = cell.borrow_mut();
+        assert!(f.is_none(), "set_main_loop() called twice");
+        *f = Some(Box::new(func));
+    });
+    unsafe {
+        // If simulate_infinite_loop is true, this function will throw
+        // an exception. Set false because it is dangerous.
+        ffi::emscripten_set_main_loop(Some(main_loop_func), fps, false);
+    }
+}
+
 pub use ffi::EmscriptenMouseEvent as MouseEvent;
 
+/// Warning: handler cannot be deleted. Do not call repeatedly.
 /// * `target`: CSS selector like `#id`
 pub fn set_click_callback<F>(target: &str, func: F) -> anyhow::Result<usize>
 where
@@ -75,10 +106,9 @@ where
     }
 
     let target = CString::new(target).unwrap();
-    let boxed_func: MouseCallback = Box::new(func);
     let id = MOUSE_HANDLERS.with(|cell| {
         let mut v = cell.borrow_mut();
-        v.push(boxed_func);
+        v.push(Box::new(func));
         v.len() - 1
     });
 

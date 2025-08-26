@@ -44,7 +44,7 @@ fn lua_exec(src: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn set_callback() {
+fn set_callback_button_clicked() {
     let res = emscripten::set_click_callback("#run", |_, _| {
         println!("clicked");
         let src = emscripten::eval_js(
@@ -85,10 +85,22 @@ f()
     }
 }
 
+fn main_loop_raw() {
+    emscripten::log(emscripten::LogTarget::ConsoleDebug, "frame");
+}
+
+fn setup_main_loop() {
+    emscripten::set_main_loop(1, main_loop_raw);
+}
+
 fn main() -> anyhow::Result<()> {
     print_test();
-    set_callback();
-    lua_test()?;
+    set_callback_button_clicked();
+    if let Err(err) = lua_test() {
+        eprintln!("{err}");
+    }
+
+    setup_main_loop();
 
     /*
      * By default Emscripten sets EXIT_RUNTIME=0,
