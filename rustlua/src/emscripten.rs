@@ -1,4 +1,4 @@
-use std::ffi::CString;
+use std::{cell::RefCell, ffi::CString};
 
 mod ffi {
     #![allow(dead_code)]
@@ -32,5 +32,58 @@ pub fn log(target: LogTarget, msg: &str) {
 
     unsafe {
         ffi::emscripten_log(flags, c"%s".as_ptr(), msg.as_ptr());
+    }
+}
+
+pub use ffi::EmscriptenMouseEvent as MouseEvent;
+
+/// * `target`: CSS selector like `#id`
+pub fn set_click_callback<F>(target: &str, func: F) -> anyhow::Result<usize>
+where
+    F: FnMut(i32, &MouseEvent) -> bool + 'static,
+{
+    type MouseCallback = Box<dyn FnMut(i32, &MouseEvent) -> bool>;
+    thread_local! {
+        static MOUSE_HANDLERS: RefCell<Vec<MouseCallback>> = RefCell::new(Vec::new());
+    }
+
+    extern "C" fn callback(
+        event_type: ::std::os::raw::c_int,
+        mouse_event: *const ffi::EmscriptenMouseEvent,
+        user_data: *mut ::std::os::raw::c_void,
+    ) -> bool {
+        // void* to usize
+        let id = user_data as usize;
+        // C const pointer to Rust ref
+        let event = unsafe { &*mouse_event };
+        MOUSE_HANDLERS.with(|cell| {
+            let mut v = cell.borrow_mut();
+            v[id](event_type, event)
+        })
+    }
+
+    let target = CString::new(target).unwrap();
+    let boxed_func: MouseCallback = Box::new(func);
+    let id = MOUSE_HANDLERS.with(|cell| {
+        let mut v = cell.borrow_mut();
+        v.push(boxed_func);
+        v.len() - 1
+    });
+
+    // #define EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD ((pthread_t)0x2)
+    const EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD: usize = 2;
+    let ret = unsafe {
+        ffi::emscripten_set_click_callback_on_thread(
+            target.as_ptr(),
+            id as _,
+            false,
+            Some(callback),
+            EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD as _,
+        )
+    };
+    if ret >= 0 {
+        Ok(id)
+    } else {
+        anyhow::bail!("EMSCRIPTEN_RESULT: {}", ret);
     }
 }

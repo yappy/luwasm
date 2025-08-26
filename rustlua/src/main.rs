@@ -41,8 +41,21 @@ fn lua_test() -> Result<()> {
     Ok(())
 }
 
+fn set_callback() {
+    if let Err(err) = emscripten::set_click_callback("#run", |event_type, _| {
+        println!("event_type: {}", event_type);
+
+        false
+    }) {
+        println!("{err}");
+    }else {
+        println!("set_click_callback ok");
+    }
+}
+
 fn main() -> Result<()> {
     print_test();
+    set_callback();
     lua_test()?;
 
     /*
