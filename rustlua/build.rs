@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-fn bindgen(header: &str, allowfile: &str, rs: &str) {
+fn bindgen(header: &[&str], allowfile: &str, rs: &str) {
     let sysroot = format!(
         "{}/upstream/emscripten/cache/sysroot",
         env::var("EMSDK").unwrap()
@@ -15,7 +15,7 @@ fn bindgen(header: &str, allowfile: &str, rs: &str) {
         // the default visibility of functions (in elf) is hidden.
         // https://github.com/rust-lang/rust-bindgen/issues/751#issuecomment-496891269
         .clang_arg("-fvisibility=default")
-        .header(format!("{sysroot}/include/{header}"))
+        .headers(header.iter().map(|h| format!("{sysroot}/include/{h}")))
         .allowlist_file(format!("{sysroot}/include/{allowfile}"))
         .default_macro_constant_type(bindgen::MacroTypeVariation::Signed)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
@@ -27,10 +27,9 @@ fn bindgen(header: &str, allowfile: &str, rs: &str) {
 
 fn main() {
     bindgen(
-        "emscripten/emscripten.h",
-        "emscripten/.*",
+        &["emscripten/emscripten.h", "emscripten/html5.h"],
+        ".*",
         "bind_emscripten.rs",
     );
-    bindgen("emscripten/html5.h", "emscripten/.*", "bind_html5.rs");
-    bindgen("SDL/SDL.h", "SDL/.*", "bind_sdl.rs");
+    bindgen(&["SDL/SDL.h"], ".*", "bind_sdl.rs");
 }
