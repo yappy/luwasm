@@ -1,5 +1,6 @@
 mod emscripten;
 
+use log::info;
 use mlua::{Lua, LuaOptions, StdLib};
 
 use crate::emscripten::setup_logger;
@@ -57,13 +58,12 @@ fn set_callback_button_clicked() {
         println!("clicked");
         let src = emscripten::eval_js(
             r"
-function f() {
+(function() {
     if (!document) return null;
     var e = document.getElementById('source');
     if (!e) return null;
     return e.value;
-}
-f()
+})()
 ",
         );
         let src = if let Some(src) = src {
@@ -126,9 +126,7 @@ fn setup_main_loop() {
     emscripten::set_main_loop(1, main_loop_raw);
 }
 
-fn main() -> anyhow::Result<()> {
-    setup_logger(log::LevelFilter::Trace);
-
+fn run() -> anyhow::Result<()> {
     print_test();
     set_callback_button_clicked();
     if let Err(err) = lua_test() {
@@ -138,6 +136,19 @@ fn main() -> anyhow::Result<()> {
 
     setup_main_loop();
 
+    Ok(())
+}
+
+fn main() {
+    setup_logger(log::LevelFilter::Trace);
+
+    match run() {
+        Ok(()) => {}
+        Err(err) => {
+            log::error!("{err:#}");
+            eprintln!("{err:#}");
+        }
+    }
     /*
      * By default Emscripten sets EXIT_RUNTIME=0,
      * which means that we don’t include code to shut down the runtime.
@@ -148,5 +159,5 @@ fn main() -> anyhow::Result<()> {
      * even though main() exited, you may have something
      * asynchronous happening later that you want to execute.
      */
-    Ok(())
+    info!("main exit (keep alive)");
 }
