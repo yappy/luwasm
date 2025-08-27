@@ -31,7 +31,7 @@ pub fn log(target: LogTarget, msg: &str) {
     let msg = CString::new(msg).unwrap();
 
     unsafe {
-        ffi::emscripten_log(flags, c"%s".as_ptr(), msg.as_ptr());
+        ffi::emscripten_log(flags as i32, c"%s".as_ptr(), msg.as_ptr());
     }
 }
 
@@ -51,7 +51,7 @@ impl log::Log for EmLogger {
                 log::Level::Debug => LogTarget::ConsoleDebug,
                 log::Level::Trace => LogTarget::ConsoleDebug,
             };
-            emscripten::log(target, &format!("{}", record.args()));
+            self::log(target, &format!("{}", record.args()));
         }
     }
 
@@ -109,8 +109,6 @@ where
 }
 
 pub use ffi::EmscriptenMouseEvent as MouseEvent;
-
-use crate::emscripten;
 
 /// Warning: handler cannot be deleted. Do not call repeatedly.
 /// * `target`: CSS selector like `#id`

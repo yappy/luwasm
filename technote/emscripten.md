@@ -213,3 +213,9 @@ var Module = {
 HTML 中の `<script>` タグで `Module` をグローバルに定義した後、
 `<script async type="text/javascript" src="hello.js"></script>` のように
 emcc の吐いた `*js` ファイルを読み込めば OK。
+
+### Module.canvas
+
+ドキュメントには書かれていないが自動出力される HTML や canvas 無しで実行した時の
+スタックトレース等から、SDL を使うと `Module.canvas` が参照される
+(そこに canvas オブジェクトをあらかじめ設定しておく必要がある)。

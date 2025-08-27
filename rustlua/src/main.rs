@@ -119,13 +119,43 @@ fn fs_test() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn main_loop_raw() {
-    log::trace!("frame");
+fn update() {}
+
+fn draw(surface: &sdl::Surface) {
+    static COUNT: ::std::sync::atomic::AtomicI32 = ::std::sync::atomic::AtomicI32::new(0);
+    let count = COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+    let val = (count & 0xff) as u8;
+    for p in surface.pixels() {
+        *p = val;
+    }
+}
+
+fn main_loop(surface: sdl::Surface) {
+    update();
+
+    if surface.must_lock() {
+        surface.lock().expect("lock failed");
+    }
+    draw(&surface);
+    if surface.must_lock() {
+        surface.unlock();
+    }
+    surface.flip().expect("flip failed");
 }
 
 fn setup_main_loop() -> anyhow::Result<()> {
     sdl::init(sdl::init::SDL_INIT_VIDEO)?;
-    emscripten::set_main_loop(1, main_loop_raw);
+    let surface = sdl::set_video_mode(
+        640,
+        480,
+        32,
+        sdl::flags::SDL_SWSURFACE | sdl::flags::SDL_DOUBLEBUF,
+    )?;
+
+    emscripten::set_main_loop(60, move || {
+        main_loop(surface);
+    });
 
     Ok(())
 }

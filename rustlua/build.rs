@@ -17,7 +17,7 @@ fn bindgen(header: &[&str], allowfile: &str, rs: &str) {
         .clang_arg("-fvisibility=default")
         .headers(header.iter().map(|h| format!("{sysroot}/include/{h}")))
         .allowlist_file(format!("{sysroot}/include/{allowfile}"))
-        .default_macro_constant_type(bindgen::MacroTypeVariation::Signed)
+        //.default_macro_constant_type(bindgen::MacroTypeVariation::Signed)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("bindgen failed")
