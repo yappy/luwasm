@@ -1,4 +1,4 @@
-use std::{cell::RefCell, ffi::CString};
+use std::{cell::RefCell, ffi::CStr, ffi::CString};
 
 mod ffi {
     #![allow(dead_code)]
@@ -71,7 +71,7 @@ pub fn eval_js(src: &str) -> Option<String> {
     let src = CString::new(src).unwrap();
     let p = unsafe { ffi::emscripten_run_script_string(src.as_ptr()) };
     if !p.is_null() {
-        let s = unsafe { ::std::ffi::CStr::from_ptr(p) };
+        let s = unsafe { CStr::from_ptr(p) };
         Some(s.to_str().unwrap().to_string())
     } else {
         None

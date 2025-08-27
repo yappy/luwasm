@@ -1,4 +1,5 @@
 mod emscripten;
+mod sdl;
 
 use log::info;
 use mlua::{Lua, LuaOptions, StdLib};
@@ -122,8 +123,11 @@ fn main_loop_raw() {
     log::trace!("frame");
 }
 
-fn setup_main_loop() {
+fn setup_main_loop() -> anyhow::Result<()> {
+    sdl::init(sdl::init::SDL_INIT_VIDEO)?;
     emscripten::set_main_loop(1, main_loop_raw);
+
+    Ok(())
 }
 
 fn run() -> anyhow::Result<()> {
@@ -134,7 +138,7 @@ fn run() -> anyhow::Result<()> {
     }
     fs_test()?;
 
-    setup_main_loop();
+    setup_main_loop()?;
 
     Ok(())
 }
