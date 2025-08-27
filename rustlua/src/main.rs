@@ -1,10 +1,10 @@
 mod emscripten;
 mod sdl;
 
-use log::info;
-use mlua::{Lua, LuaOptions, StdLib};
+use std::cell::RefCell;
 
-use crate::emscripten::setup_logger;
+use log::{info, trace};
+use mlua::{Lua, LuaOptions, StdLib};
 
 fn print_test() {
     println!("println to stdout");
@@ -131,17 +131,56 @@ fn draw(surface: &sdl::Surface) {
     }
 }
 
-fn main_loop(surface: sdl::Surface) {
+fn main_loop(surface: &sdl::Surface) {
     update();
 
     if surface.must_lock() {
         surface.lock().expect("lock failed");
     }
-    draw(&surface);
+    draw(surface);
     if surface.must_lock() {
         surface.unlock();
     }
     surface.flip().expect("flip failed");
+}
+
+fn main_loop_raw(surface: &sdl::Surface) {
+    struct FpsState {
+        fps: f64,
+        start_time: f64,
+        frame_count: u32,
+    }
+    thread_local! {
+        static FPS_STATE: RefCell<FpsState> = RefCell::new(FpsState {
+            fps: 0.0,
+            start_time: 0.0,
+            frame_count: 0,
+        });
+    }
+
+    const FPS_UPDATE_PERIOD_MS: f64 = 2000.0;
+
+    FPS_STATE.with(|cell| {
+        let mut state = cell.borrow_mut();
+
+        let now = emscripten::performance_now();
+        if state.start_time == 0.0 {
+            // first call
+            state.start_time = now;
+            state.frame_count = 0;
+        } else {
+            state.frame_count += 1;
+        }
+        let elapsed = now - state.start_time;
+        if elapsed >= FPS_UPDATE_PERIOD_MS {
+            state.fps = (state.frame_count as f64) / elapsed * 1000.0;
+            state.start_time = now;
+            state.frame_count = 0;
+            trace!("fps: {:.1}", state.fps);
+        }
+    });
+
+    main_loop(surface);
 }
 
 fn setup_main_loop() -> anyhow::Result<()> {
@@ -153,8 +192,11 @@ fn setup_main_loop() -> anyhow::Result<()> {
         sdl::flags::SDL_SWSURFACE | sdl::flags::SDL_DOUBLEBUF,
     )?;
 
-    emscripten::set_main_loop(60, move || {
-        main_loop(surface);
+    // fps (not 0) does not work well
+    // probably because of security issue?
+    // fps=0 means to use requestAnimationFrame()
+    emscripten::set_main_loop(0, move || {
+        main_loop_raw(&surface);
     });
 
     Ok(())
@@ -174,7 +216,7 @@ fn run() -> anyhow::Result<()> {
 }
 
 fn main() {
-    setup_logger(log::LevelFilter::Trace);
+    emscripten::setup_logger(log::LevelFilter::Trace);
 
     match run() {
         Ok(()) => {}

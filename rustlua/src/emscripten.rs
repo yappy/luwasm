@@ -78,6 +78,11 @@ pub fn eval_js(src: &str) -> Option<String> {
     }
 }
 
+/// Calls JavaScript `performance.now()` function. (ms)
+pub fn performance_now() -> f64 {
+    unsafe { ffi::emscripten_performance_now() }
+}
+
 /// <https://emscripten.org/docs/api_reference/emscripten.h.html#c.emscripten_set_main_loop>
 pub fn set_main_loop<F>(fps: i32, func: F)
 where
