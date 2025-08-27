@@ -93,6 +93,31 @@ f()
     }
 }
 
+fn ls(dir: impl AsRef<::std::path::Path>) -> anyhow::Result<()> {
+    for entry in ::std::fs::read_dir(&dir)? {
+        let entry = entry?;
+        let ftype = entry.file_type()?;
+        if ftype.is_dir() {
+            println!("D {}", entry.path().to_string_lossy());
+            ls(entry.path())?;
+        } else if ftype.is_file() {
+            println!("F {}", entry.path().to_string_lossy());
+        }
+    }
+    Ok(())
+}
+
+fn fs_test() -> anyhow::Result<()> {
+    println!("[FS Test]");
+    let pwd = ::std::env::current_dir()?;
+    println!("pwd: {}", pwd.to_string_lossy());
+    let home = ::std::env::var("HOME")?;
+    println!("$HOME: {home}");
+    ls("/")?;
+
+    Ok(())
+}
+
 fn main_loop_raw() {
     log::trace!("frame");
 }
@@ -109,6 +134,7 @@ fn main() -> anyhow::Result<()> {
     if let Err(err) = lua_test() {
         eprintln!("{err}");
     }
+    fs_test()?;
 
     setup_main_loop();
 
