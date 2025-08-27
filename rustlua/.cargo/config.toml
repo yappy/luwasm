@@ -1,5 +1,14 @@
 [build]
 target = "wasm32-unknown-emscripten"
 
+[env]
+# Use the closure compiler on the non-compiled code: --closure 1.
+# This can hugely reduce the size of the support JavaScript code,
+# and is highly recommended.
+# However, if you add your own additional JavaScript code
+# (in a --pre-js, for example) then you need to make sure
+# it uses closure annotations properly.
+EMCC_CFLAGS = "--closure 1"
+
 [target.wasm32-unknown-emscripten]
 runner = "node"
