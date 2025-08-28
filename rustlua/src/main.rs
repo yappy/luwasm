@@ -1,5 +1,5 @@
-mod emscripten;
-mod sdl;
+mod app;
+mod emapi;
 
 use std::cell::RefCell;
 
@@ -10,12 +10,12 @@ fn print_test() {
     println!("println to stdout");
     eprintln!("eprintln to stderr");
 
-    emscripten::log(emscripten::LogTarget::ModuleOut, "Module stdout");
-    emscripten::log(emscripten::LogTarget::ModuleErr, "Module stderr");
-    emscripten::log(emscripten::LogTarget::ConsoleError, "console.error");
-    emscripten::log(emscripten::LogTarget::ConsoleWarn, "console.warn");
-    emscripten::log(emscripten::LogTarget::ConsoleInfo, "console.info");
-    emscripten::log(emscripten::LogTarget::ConsoleDebug, "console.debug");
+    emapi::emscripten::log(emapi::emscripten::LogTarget::ModuleOut, "Module stdout");
+    emapi::emscripten::log(emapi::emscripten::LogTarget::ModuleErr, "Module stderr");
+    emapi::emscripten::log(emapi::emscripten::LogTarget::ConsoleError, "console.error");
+    emapi::emscripten::log(emapi::emscripten::LogTarget::ConsoleWarn, "console.warn");
+    emapi::emscripten::log(emapi::emscripten::LogTarget::ConsoleInfo, "console.info");
+    emapi::emscripten::log(emapi::emscripten::LogTarget::ConsoleDebug, "console.debug");
 
     log::error!("log::error");
     log::warn!("log::warn");
@@ -55,9 +55,9 @@ fn lua_exec(src: &str) -> anyhow::Result<()> {
 }
 
 fn set_callback_button_clicked() {
-    let res = emscripten::set_click_callback("#run", |_, _| {
+    let res = emapi::emscripten::set_click_callback("#run", |_, _| {
         println!("clicked");
-        let src = emscripten::eval_js(
+        let src = emapi::emscripten::eval_js(
             r"
 (function() {
     if (!document) return null;
@@ -121,7 +121,7 @@ fn fs_test() -> anyhow::Result<()> {
 
 fn update() {}
 
-fn draw(surface: &sdl::Surface) {
+fn draw(surface: &emapi::sdl::Surface) {
     static COUNT: ::std::sync::atomic::AtomicI32 = ::std::sync::atomic::AtomicI32::new(0);
     let count = COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
@@ -131,7 +131,7 @@ fn draw(surface: &sdl::Surface) {
     }
 }
 
-fn main_loop(surface: &sdl::Surface) {
+fn main_loop(surface: &emapi::sdl::Surface) {
     update();
 
     if surface.must_lock() {
@@ -144,7 +144,7 @@ fn main_loop(surface: &sdl::Surface) {
     surface.flip().expect("flip failed");
 }
 
-fn main_loop_raw(surface: &sdl::Surface) {
+fn main_loop_raw(surface: &emapi::sdl::Surface) {
     struct FpsState {
         fps: f64,
         start_time: f64,
@@ -163,7 +163,7 @@ fn main_loop_raw(surface: &sdl::Surface) {
     FPS_STATE.with(|cell| {
         let mut state = cell.borrow_mut();
 
-        let now = emscripten::performance_now();
+        let now = emapi::emscripten::performance_now();
         if state.start_time == 0.0 {
             // first call
             state.start_time = now;
@@ -184,18 +184,18 @@ fn main_loop_raw(surface: &sdl::Surface) {
 }
 
 fn setup_main_loop() -> anyhow::Result<()> {
-    sdl::init(sdl::init::SDL_INIT_VIDEO)?;
-    let surface = sdl::set_video_mode(
+    emapi::sdl::init(emapi::sdl::init::SDL_INIT_VIDEO)?;
+    let surface = emapi::sdl::set_video_mode(
         640,
         480,
         32,
-        sdl::flags::SDL_SWSURFACE | sdl::flags::SDL_DOUBLEBUF,
+        emapi::sdl::flags::SDL_SWSURFACE | emapi::sdl::flags::SDL_DOUBLEBUF,
     )?;
 
     // fps (not 0) does not work well
     // probably because of security issue?
     // fps=0 means to use requestAnimationFrame()
-    emscripten::set_main_loop(0, move || {
+    emapi::emscripten::set_main_loop(0, move || {
         main_loop_raw(&surface);
     });
 
@@ -216,7 +216,7 @@ fn run() -> anyhow::Result<()> {
 }
 
 fn main() {
-    emscripten::setup_logger(log::LevelFilter::Trace);
+    app::jslog::setup_logger(log::LevelFilter::Trace);
 
     match run() {
         Ok(()) => {}
