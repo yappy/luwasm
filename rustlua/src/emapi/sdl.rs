@@ -64,7 +64,7 @@ pub mod flags {
 ///
 ///     /* Application data associated with the surface */
 ///     void *userdata;                         /* Read-write */
-
+///
 ///     /* information needed for surfaces requiring locks */
 ///     int locked;                             /* Read-only */
 ///     void *lock_data;                        /* Read-only */

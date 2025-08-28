@@ -95,16 +95,14 @@ fn set_callback_button_clicked() {
 }
 
 fn ls(dir: impl AsRef<::std::path::Path>) -> anyhow::Result<()> {
-    for entry in ::std::fs::read_dir(&dir)? {
-        let entry = entry?;
-        let ftype = entry.file_type()?;
-        if ftype.is_dir() {
-            println!("D {}", entry.path().to_string_lossy());
-            ls(entry.path())?;
-        } else if ftype.is_file() {
-            println!("F {}", entry.path().to_string_lossy());
-        }
+    for (path, etype) in app::fs::ls_recursive(dir, false)? {
+        let c = match etype {
+            app::fs::EntryType::DIR => 'D',
+            app::fs::EntryType::FILE => 'F',
+        };
+        println!("{c} {}", path.to_str().unwrap());
     }
+
     Ok(())
 }
 
