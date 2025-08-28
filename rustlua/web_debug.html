@@ -11,21 +11,18 @@
     <div>
       <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1>
       </canvas>
+      <textarea id="stdout" rows="30" cols="40"></textarea>
+      <textarea id="stderr" rows="30" cols="40"></textarea>
     </div>
 
-    <label for="source">Lua Source</label><br>
-    <textarea id="source" rows="15" cols="80">print('hello lua')&NewLine;</textarea><br>
-    <button id="run">Run</button><br><br>
-
-    <label for="stdout">stdout</label><br>
-    <textarea id="stdout" rows="5" cols="80" readonly></textarea><br>
-    <label for="stderr">stderr</label><br>
-    <textarea id="stderr" rows="5" cols="80" readonly></textarea><br>
+    <label for="edit">Editor</label><br>
+    <textarea id="edit" rows="15" cols="80">print('hello lua')&NewLine;</textarea><br>
+    <button id="run">Run as Lua</button><br><br>
 
     <hr>
     <p>
-        WASM load may be failed due to sercurity reason.
-        <strong>python3 -m http.server</strong> is recommended.
+      WASM load may be failed due to sercurity reason.
+      <strong>python3 -m http.server</strong> is recommended.
     </p>
 
     <script type='text/javascript'>
@@ -51,6 +48,7 @@
           }
         },
         canvas: canvas,
+        keyboardListeningElement: canvas,
       };
     </script>
     <script async type="text/javascript" src="target/wasm32-unknown-emscripten/debug/rustlua.js"></script>
