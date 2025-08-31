@@ -115,9 +115,20 @@ fn fs_test() -> anyhow::Result<()> {
 
     ls("/")?;
 
-    let path: &std::path::Path = "/home/web_user/hello.txt".as_ref();
-    ::std::fs::write(path, "")?;
+    let dir: &::std::path::Path = "/home/web_user".as_ref();
+    let path = dir.join("hello.txt");
+    ::std::fs::write(&path, "Hello!\n")?;
     println!("create: hello.txt");
+
+    let json = app::fs::create_fs_image("/home/web_user")?;
+    println!("create_fs_image");
+    println!("{json}");
+
+    app::fs::import_fs_image(&json, dir)?;
+    println!("import_fs_image");
+
+    let content = ::std::fs::read_to_string(&path)?;
+    println!("{content}");
 
     Ok(())
 }
