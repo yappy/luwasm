@@ -2,7 +2,12 @@
 //! * use only (regular) file or dir
 //! * ignore r/w permissions
 
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
+
+use base64::Engine;
 
 pub enum EntryType {
     FILE,
@@ -82,4 +87,29 @@ fn ls_rec_body(
     }
 
     Ok(())
+}
+
+fn compress_to_base64(src: &[u8]) -> String {
+    let compressed = compress(src);
+
+    base64::prelude::BASE64_STANDARD_NO_PAD.encode(compressed)
+}
+
+fn decompress_from_base64(src: &str) -> anyhow::Result<Vec<u8>> {
+    let compressed = base64::prelude::BASE64_STANDARD_NO_PAD.decode(src)?;
+    let decompressed = decompress(&compressed);
+
+    Ok(decompressed)
+}
+
+fn compress(src: &[u8]) -> Vec<u8> {
+    let mut en = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::best());
+    en.write_all(src).unwrap();
+    en.finish().unwrap()
+}
+
+fn decompress(src: &[u8]) -> Vec<u8> {
+    let mut de = flate2::write::ZlibDecoder::new(Vec::new());
+    de.write_all(src).unwrap();
+    de.finish().unwrap()
 }

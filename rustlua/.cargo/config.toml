@@ -8,7 +8,8 @@ target = "wasm32-unknown-emscripten"
 # However, if you add your own additional JavaScript code
 # (in a --pre-js, for example) then you need to make sure
 # it uses closure annotations properly.
-EMCC_CFLAGS = "--closure 1"
+#EMCC_CFLAGS = "--closure 1"
+#EMCC_CFLAGS = "-lidbfs.js"
 
 [target.wasm32-unknown-emscripten]
 runner = "node"

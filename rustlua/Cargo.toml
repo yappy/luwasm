@@ -15,6 +15,8 @@ strip = true
 
 [dependencies]
 anyhow = "1.0.99"
+base64 = "0.22.1"
+flate2 = "1.1.2"
 log = "0.4.27"
 mlua = { version = "0.11.2", features = ["lua54", "vendored", "anyhow"] }
 

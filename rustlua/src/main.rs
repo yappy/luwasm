@@ -57,7 +57,7 @@ fn lua_exec(src: &str) -> anyhow::Result<()> {
 fn set_callback_button_clicked() {
     let res = emapi::emscripten::set_click_callback("#run", |_, _| {
         println!("clicked");
-        let src = emapi::emscripten::eval_js(
+        let src = emapi::emscripten::eval_js_string(
             r"
 (function() {
     if (!document) return null;
@@ -112,7 +112,12 @@ fn fs_test() -> anyhow::Result<()> {
     println!("pwd: {}", pwd.to_string_lossy());
     let home = ::std::env::var("HOME")?;
     println!("$HOME: {home}");
+
     ls("/")?;
+
+    let path: &std::path::Path = "/home/web_user/hello.txt".as_ref();
+    ::std::fs::write(path, "")?;
+    println!("create: hello.txt");
 
     Ok(())
 }

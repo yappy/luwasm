@@ -36,7 +36,14 @@ pub fn log(target: LogTarget, msg: &str) {
 }
 
 /// Warning: if js code throws exception, it causes undefined behavior.
-pub fn eval_js(src: &str) -> Option<String> {
+#[allow(dead_code)]
+pub fn eval_js(src: &str) {
+    let src = CString::new(src).unwrap();
+    unsafe { ffi::emscripten_run_script(src.as_ptr()) }
+}
+
+/// Warning: if js code throws exception, it causes undefined behavior.
+pub fn eval_js_string(src: &str) -> Option<String> {
     let src = CString::new(src).unwrap();
     let p = unsafe { ffi::emscripten_run_script_string(src.as_ptr()) };
     if !p.is_null() {
@@ -45,6 +52,13 @@ pub fn eval_js(src: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+/// Warning: if js code throws exception, it causes undefined behavior.
+#[allow(dead_code)]
+pub fn eval_js_int(src: &str) -> i32 {
+    let src = CString::new(src).unwrap();
+    unsafe { ffi::emscripten_run_script_int(src.as_ptr()) }
 }
 
 /// Calls JavaScript `performance.now()` function. (ms)
