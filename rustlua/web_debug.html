@@ -15,9 +15,15 @@
       <textarea id="stderr" rows="30" cols="40"></textarea>
     </div>
 
-    <label for="edit">Editor</label><br>
-    <textarea id="edit" rows="15" cols="80">print('hello lua')&NewLine;</textarea><br>
-    <button id="run">Run as Lua</button><br><br>
+    <div><label for="import_files">Import File(s)</label></div>
+    <div><input type="file" id="import_files" multiple></div>
+    <div><button id="import_button">Import</button></div>
+
+    <hr>
+
+    <div><label for="edit">Editor</label></div>
+    <div><textarea id="edit" rows="15" cols="80">print('hello lua')&NewLine;</textarea></div>
+    <div><button id="run">Run as Lua</button></div>
 
     <hr>
     <p>
@@ -31,6 +37,7 @@
       if (outElement) outElement.value = ''; // clear browser cache
       var errElement = document.getElementById('stderr');
       if (errElement) errElement.value = ''; // clear browser cache
+      var importFiles = document.getElementById('import_files');
 
       var Module = {
         print(...args) {
@@ -49,6 +56,31 @@
         },
         canvas: canvas,
         keyboardListeningElement: canvas,
+
+        // user-defined
+        importFiles: importFiles,
+        importFilesName: [],
+        importFilesData: [],
+        takeImportFileName() {
+          this.importFilesNames.shift()
+        },
+        takeImportFileData() {
+          this.importFilesData.shift()
+        },
+      };
+
+      document.getElementById('import_button').onclick = () => {
+        var files = Module.importFiles.files;
+        for (var i = 0; i < files.length; i++) {
+          var file = files[i];
+          var fileReader = new FileReader();
+          fileReader.onload = (function (e) {
+            Module.importFilesName.push(file.name);
+            Module.importFilesData.push(e.target.result);
+            //console.debug(file.name, e.target.result);
+          });
+          fileReader.readAsDataURL(file);
+        }
       };
     </script>
     <script async type="text/javascript" src="target/wasm32-unknown-emscripten/debug/rustlua.js"></script>
