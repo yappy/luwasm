@@ -59,13 +59,13 @@
 
         // user-defined
         importFiles: importFiles,
-        importFilesName: [],
+        importFileNames: [],
         importFilesData: [],
         takeImportFileName() {
-          this.importFilesNames.shift()
+          return this.importFileNames.shift();
         },
         takeImportFileData() {
-          this.importFilesData.shift()
+          return this.importFilesData.shift();
         },
       };
 
@@ -75,9 +75,8 @@
           var file = files[i];
           var fileReader = new FileReader();
           fileReader.onload = (function (e) {
-            Module.importFilesName.push(file.name);
+            Module.importFileNames.push(file.name);
             Module.importFilesData.push(e.target.result);
-            //console.debug(file.name, e.target.result);
           });
           fileReader.readAsDataURL(file);
         }

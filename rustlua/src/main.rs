@@ -6,6 +6,8 @@ use std::cell::RefCell;
 use log::{info, trace};
 use mlua::{Lua, LuaOptions, StdLib};
 
+const HOME_DIR: &str = "/home/web_user";
+
 fn print_test() {
     println!("println to stdout");
     eprintln!("eprintln to stderr");
@@ -59,7 +61,7 @@ fn set_callback_button_clicked() {
         println!("clicked");
         let src = emapi::emscripten::eval_js_string(
             r"
-(function() {
+(() => {
     if (!document) return null;
     var e = document.getElementById('source');
     if (!e) return null;
@@ -133,7 +135,66 @@ fn fs_test() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn update() {}
+fn process_import_file() -> anyhow::Result<()> {
+    let file_name = emapi::emscripten::eval_js_string(
+        r"
+(() => {
+    try { return Module.takeImportFileName(); }
+    catch (e) { console.error(e); return null; }
+})()",
+    );
+    let file_data = emapi::emscripten::eval_js_string(
+        r"
+(() => {
+    try { return Module.takeImportFileData(); }
+    catch (e) { console.error(e); return null; }
+})()",
+    );
+
+    if file_name.is_none() || file_data.is_none() {
+        return Ok(());
+    }
+    let file_name = file_name.unwrap();
+    let file_data = file_data.unwrap();
+    anyhow::ensure!(
+        file_name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || ".-_~".find(c).is_some()),
+        "Invalid file name: {file_name}"
+    );
+    log::info!("Import: {file_name}");
+
+    // get start index of BASE64STRING in "data:*/*;base64,BASE64STRING..."
+    anyhow::ensure!(file_data.starts_with("data:"), "Invalid data URL");
+    let pat = ";base64,";
+    let base64_start = if let Some(ind) = file_data.find(pat) {
+        ind + pat.len()
+    } else {
+        anyhow::bail!("Invalid data URL");
+    };
+    let base64_string = &file_data[base64_start..];
+    log::debug!("{base64_string}");
+
+    // base64 decode
+    let bin = {
+        use base64::Engine;
+        use base64::prelude::*;
+        BASE64_STANDARD.decode(base64_string)?
+    };
+
+    let path: &::std::path::Path = HOME_DIR.as_ref();
+    ::std::fs::write(path.join(&file_name), &bin)?;
+
+    log::info!("Import: {file_name} (size={})", bin.len());
+
+    Ok(())
+}
+
+fn update() {
+    if let Err(err) = process_import_file() {
+        log::error!("{err:#}");
+    }
+}
 
 fn draw(surface: &emapi::sdl::Surface) {
     static COUNT: ::std::sync::atomic::AtomicI32 = ::std::sync::atomic::AtomicI32::new(0);
