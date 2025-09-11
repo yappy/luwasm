@@ -1,4 +1,7 @@
+use anyhow::Context;
 use clap::Parser;
+
+use crate::app::fs::HOME_DIR;
 
 #[derive(clap::Parser)]
 struct CommandParser {
@@ -14,7 +17,6 @@ enum Commands {
     Cd {
         /// Destination directory.
         /// If not specified, go to $HOME.
-        /// If "-" is specified, goto $OLDPWD (previous dir).
         dir: Option<String>,
     },
     /// List files
@@ -31,7 +33,7 @@ pub fn exec(cmdline: &str) -> anyhow::Result<()> {
 
     match parsed.command {
         Commands::Pwd => cmd_pwd(),
-        Commands::Cd { dir: _ } => todo!(),
+        Commands::Cd { dir } => cmd_cd(dir),
         Commands::Ls { path: _ } => todo!(),
     }
 }
@@ -41,4 +43,14 @@ fn cmd_pwd() -> anyhow::Result<()> {
     println!("{}", dir.as_os_str().to_string_lossy());
 
     Ok(())
+}
+
+fn cmd_cd(dir: Option<String>) -> anyhow::Result<()> {
+    let dir = if let Some(ref dir) = dir {
+        dir.as_str()
+    } else {
+        HOME_DIR
+    };
+
+    std::env::set_current_dir(dir).context("Change directory failed")
 }

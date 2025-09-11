@@ -6,8 +6,6 @@ use std::cell::RefCell;
 use log::{info, trace};
 use mlua::{Lua, LuaOptions, StdLib};
 
-const HOME_DIR: &str = "/home/web_user";
-
 fn print_test() {
     println!("println to stdout");
     eprintln!("eprintln to stderr");
@@ -199,7 +197,7 @@ fn process_import_file() -> anyhow::Result<()> {
         BASE64_STANDARD.decode(base64_string)?
     };
 
-    let path: &::std::path::Path = HOME_DIR.as_ref();
+    let path: &::std::path::Path = app::fs::HOME_DIR.as_ref();
     ::std::fs::write(path.join(&file_name), &bin)?;
 
     log::info!("Import: {file_name} (size={})", bin.len());
@@ -298,8 +296,9 @@ fn setup_main_loop() -> anyhow::Result<()> {
 }
 
 fn run() -> anyhow::Result<()> {
-    println!("cd {HOME_DIR}");
-    if let Err(err) = std::env::set_current_dir(HOME_DIR) {
+    let home_dir = app::fs::HOME_DIR;
+    println!("cd {home_dir}");
+    if let Err(err) = std::env::set_current_dir(home_dir) {
         println!("Change working directory failed");
         log::error!("{err}");
     }

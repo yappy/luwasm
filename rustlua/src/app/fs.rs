@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::bail;
 
+pub const HOME_DIR: &str = "/home/web_user";
+
 pub enum EntryType {
     FILE,
     DIR,
