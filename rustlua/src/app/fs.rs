@@ -118,6 +118,19 @@ pub fn create_fs_image(dir: impl AsRef<Path>) -> anyhow::Result<String> {
 pub fn import_fs_image(json: &str, dir: impl AsRef<Path>) -> anyhow::Result<()> {
     let image: FsImage = serde_json::from_str(json)?;
 
+    // move to "/"
+    struct RestoreCurrentDir(PathBuf);
+    impl Drop for RestoreCurrentDir {
+        fn drop(&mut self) {
+            if let Err(e) = std::env::set_current_dir(&self.0) {
+                log::error!("{e:#}");
+            }
+        }
+    }
+    let cdir = std::env::current_dir()?;
+    std::env::set_current_dir("/")?;
+    let _restore = RestoreCurrentDir(cdir);
+
     // delete and create empty dir
     let dir = dir.as_ref();
     if ::std::fs::exists(dir)? {
@@ -143,6 +156,7 @@ pub fn import_fs_image(json: &str, dir: impl AsRef<Path>) -> anyhow::Result<()> 
         log::debug!("Import {} ({} B)", path.to_str().unwrap(), data.len());
     }
 
+    // restore working dir
     Ok(())
 }
 

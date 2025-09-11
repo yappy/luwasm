@@ -149,7 +149,7 @@ fn process_cmdline() -> anyhow::Result<()> {
     let cmdline = cmdline.unwrap();
     log::info!("EXEC: {cmdline}");
 
-    Ok(())
+    app::cmdline::exec(&cmdline)
 }
 
 fn process_import_file() -> anyhow::Result<()> {
@@ -209,10 +209,10 @@ fn process_import_file() -> anyhow::Result<()> {
 
 fn update() {
     if let Err(err) = process_cmdline() {
-        log::error!("{err:#}");
+        println!("{err:#}");
     }
     if let Err(err) = process_import_file() {
-        log::error!("{err:#}");
+        eprintln!("{err:#}");
     }
 }
 
@@ -298,6 +298,12 @@ fn setup_main_loop() -> anyhow::Result<()> {
 }
 
 fn run() -> anyhow::Result<()> {
+    println!("cd {HOME_DIR}");
+    if let Err(err) = std::env::set_current_dir(HOME_DIR) {
+        println!("Change working directory failed");
+        log::error!("{err}");
+    }
+
     print_test();
     set_callback_button_clicked();
     if let Err(err) = lua_test() {

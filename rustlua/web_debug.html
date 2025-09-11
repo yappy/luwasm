@@ -84,7 +84,6 @@
 
       document.getElementById('command_line').onkeydown = (event) => {
         if (event.key === 'Enter') {
-          Module.print('exec command!', event.target.value);
           Module.commandLines.push(event.target.value);
           event.target.value = '';
           event.preventDefault();
