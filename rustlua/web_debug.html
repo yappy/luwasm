@@ -15,8 +15,17 @@
       <textarea id="stderr" rows="30" cols="40"></textarea>
     </div>
 
+    <div>
+      <label for="command_line">Command: </label>
+      <input id="command_line" list="command_samples" style="width: 80%;">
+      <datalist id="command_samples">
+        <option value="pwd"></option>
+        <option value="ls"></option>
+      </datalist>
+    </div>
+
     <div><label for="import_files">Import File(s)</label></div>
-    <div><input type="file" id="import_files" multiple></div>
+    <div><input id="import_files" type="file" multiple></div>
     <div><button id="import_button">Import</button></div>
 
     <hr>
@@ -58,6 +67,10 @@
         keyboardListeningElement: canvas,
 
         // user-defined
+        commandLines: [],
+        takeCommandLine() {
+          return this.commandLines.shift();
+        },
         importFiles: importFiles,
         importFileNames: [],
         importFilesData: [],
@@ -67,6 +80,15 @@
         takeImportFileData() {
           return this.importFilesData.shift();
         },
+      };
+
+      document.getElementById('command_line').onkeydown = (event) => {
+        if (event.key === 'Enter') {
+          Module.print('exec command!', event.target.value);
+          Module.commandLines.push(event.target.value);
+          event.target.value = '';
+          event.preventDefault();
+        }
       };
 
       document.getElementById('import_button').onclick = () => {

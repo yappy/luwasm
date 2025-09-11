@@ -135,6 +135,23 @@ fn fs_test() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn process_cmdline() -> anyhow::Result<()> {
+    let cmdline = emapi::emscripten::eval_js_string(
+        r"
+(() => {
+    try { return Module.takeCommandLine(); }
+    catch (e) { console.error(e); return null; }
+})()",
+    );
+    if cmdline.is_none() {
+        return Ok(());
+    }
+    let cmdline = cmdline.unwrap();
+    log::info!("EXEC: {cmdline}");
+
+    Ok(())
+}
+
 fn process_import_file() -> anyhow::Result<()> {
     let file_name = emapi::emscripten::eval_js_string(
         r"
@@ -191,6 +208,9 @@ fn process_import_file() -> anyhow::Result<()> {
 }
 
 fn update() {
+    if let Err(err) = process_cmdline() {
+        log::error!("{err:#}");
+    }
     if let Err(err) = process_import_file() {
         log::error!("{err:#}");
     }
