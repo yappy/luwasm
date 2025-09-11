@@ -17,10 +17,10 @@ strip = true
 anyhow = "1.0.99"
 base64 = "0.22.1"
 libflate = "2.1.0"
-log = "0.4.27"
-mlua = { version = "0.11.2", features = ["lua54", "vendored", "anyhow"] }
+log = "0.4.28"
+mlua = { version = "0.11.3", features = ["lua54", "vendored", "anyhow"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.143"
 
 [build-dependencies]
-bindgen = "0.72.0"
+bindgen = "0.72.1"
