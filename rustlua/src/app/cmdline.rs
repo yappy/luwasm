@@ -20,7 +20,7 @@ enum Commands {
         dir: Option<String>,
     },
     /// List files
-    Ls { path: Vec<String> },
+    Ls { paths: Vec<String> },
 }
 
 pub fn exec(cmdline: &str) -> anyhow::Result<()> {
@@ -34,7 +34,7 @@ pub fn exec(cmdline: &str) -> anyhow::Result<()> {
     match parsed.command {
         Commands::Pwd => cmd_pwd(),
         Commands::Cd { dir } => cmd_cd(dir),
-        Commands::Ls { path: _ } => todo!(),
+        Commands::Ls { paths } => cmd_ls(paths),
     }
 }
 
@@ -53,4 +53,15 @@ fn cmd_cd(dir: Option<String>) -> anyhow::Result<()> {
     };
 
     std::env::set_current_dir(dir).context("Change directory failed")
+}
+
+fn cmd_ls(paths: &Vec<String>) -> anyhow::Result<()> {
+    if paths.is_empty() {
+        super::fs::ls(".", false)?;
+    }
+    for path in paths {
+        super::fs::ls(path, false)?;
+    }
+
+    Ok(())
 }
