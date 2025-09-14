@@ -34,7 +34,7 @@ pub fn exec(cmdline: &str) -> anyhow::Result<()> {
     match parsed.command {
         Commands::Pwd => cmd_pwd(),
         Commands::Cd { dir } => cmd_cd(dir),
-        Commands::Ls { paths } => cmd_ls(paths),
+        Commands::Ls { paths } => cmd_ls(&paths),
     }
 }
 
