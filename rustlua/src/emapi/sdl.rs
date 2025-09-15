@@ -20,6 +20,33 @@ fn sdl_error() -> anyhow::Result<()> {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl Color {
+    #[allow(dead_code)]
+    pub const BLACK: Self = Self { r: 0, g: 0, b: 0 };
+    #[allow(dead_code)]
+    pub const WHITE: Self = Self {
+        r: 255,
+        g: 255,
+        b: 255,
+    };
+
+    fn to_sdl_color(&self) -> ffi::SDL_Color {
+        ffi::SDL_Color {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            unused: 0,
+        }
+    }
+}
+
 pub mod init {
     #![allow(unused_imports)]
     pub use super::ffi::SDL_INIT_AUDIO;
@@ -84,8 +111,16 @@ pub mod flags {
 ///
 /// The surface returned is freed by SDL_Quit() and
 /// should nt be freed by the caller.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Surface(*mut ffi::SDL_Surface);
+
+impl Drop for Surface {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::SDL_FreeSurface(self.0);
+        }
+    }
+}
 
 #[allow(dead_code)]
 impl Surface {
@@ -135,6 +170,17 @@ impl Surface {
 
         Ok(())
     }
+
+    pub fn blit(&self, dst: &Self) -> anyhow::Result<()> {
+        // #define SDL_BlitSurface SDL_UpperBlit
+        let ret =
+            unsafe { ffi::SDL_UpperBlit(self.0, std::ptr::null(), dst.0, std::ptr::null_mut()) };
+        if ret < 0 {
+            sdl_error()?;
+        }
+
+        Ok(())
+    }
 }
 
 pub fn set_video_mode(width: i32, height: i32, bpp: i32, flags: u32) -> anyhow::Result<Surface> {
@@ -144,4 +190,56 @@ pub fn set_video_mode(width: i32, height: i32, bpp: i32, flags: u32) -> anyhow::
     }
 
     Ok(Surface(surface))
+}
+
+// -----------------------------------------------------------------------------
+
+pub mod ttf {
+    use super::ffi;
+    use std::ffi::CString;
+
+    // #define TTF_GetError SDL_GetError
+    use super::sdl_error as ttf_error;
+
+    pub fn init() -> anyhow::Result<()> {
+        let ret = unsafe { ffi::TTF_Init() };
+        if ret < 0 {
+            ttf_error()?;
+        }
+
+        Ok(())
+    }
+
+    pub struct Font(*mut ffi::TTF_Font);
+
+    impl Drop for Font {
+        fn drop(&mut self) {
+            unsafe {
+                ffi::TTF_CloseFont(self.0);
+            }
+        }
+    }
+
+    impl Font {
+        pub fn render(&self, text: &str, fg: super::Color) -> anyhow::Result<super::Surface> {
+            let text = CString::new(text).unwrap();
+            let surface =
+                unsafe { ffi::TTF_RenderText_Blended(self.0, text.as_ptr(), fg.to_sdl_color()) };
+            if surface.is_null() {
+                ttf_error()?;
+            }
+
+            Ok(super::Surface(surface))
+        }
+    }
+
+    pub fn open_font(file: &str, ptsize: i32) -> anyhow::Result<Font> {
+        let file = CString::new(file).unwrap();
+        let font = unsafe { ffi::TTF_OpenFont(file.as_ptr(), ptsize) };
+        if font.is_null() {
+            ttf_error()?;
+        }
+
+        Ok(Font(font))
+    }
 }

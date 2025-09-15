@@ -43,7 +43,8 @@ SDL(1) のヘッダは
 にインストールされる。
 
 しかしなんだか公式 `1.2.15` と微妙に構造体定義が異なる箇所がある気がする。
-また、`SDL_image`
+また、`SDL_image` 等、SDL を冠するが別メンテのライブラリも同じディレクトリに
+入っているがバージョンが違う。
 
 ## トラブルシューティング
 
@@ -96,3 +97,57 @@ var _SDL_Init = (initFlags) => {
 
 `Module` オブジェクトの初期化は HTML 出力を参考にするか、
 `--pre-js <jsfile>` オプションをコンパイラ (リンカ) に渡す。
+
+## SDL_ttf
+
+`emsdk/upstream/emscripten/cache/sysroot/include/SDL` に `SDL_ttf.h` がある。
+バージョンは 2.0.11 と書いてあり、本家が SDL2 時代に書かれたものっぽいが、
+内部実装は JavaScript Canvas で drawString するだけだろうし
+SDL1 の中に混ざっていることに関してはあまり深く考えてはいけない。
+
+<https://www.libsdl.org/projects/old/SDL_ttf/docs/index.html>
+
+### OpenFont
+
+本来はファイルシステム上のフォントファイルを読み込むが、
+生成される js コードを読むと、name パラメータはフォントファイルパスではなく、
+代わりに HTML/JavaScript システムでの font-family 指定に使用されるようだ。
+
+固有のフォント名でない総称ファミリ名の一覧
+
+* serif
+  * 明朝体
+* sans-serif
+  * ゴシック体
+* cursive
+  * 筆記体
+* fantasy
+  * かわいい系？
+* monospace
+  * 等幅フォント
+
+```JS
+var _TTF_OpenFont = (name, size) => {
+    name = PATH.normalize(UTF8ToString(name));
+    var id = SDL.fonts.length;
+    SDL.fonts.push({
+      name, // but we don't actually do anything with it..
+      size
+    });
+    return id;
+  };
+
+var _TTF_CloseFont = (font) => {
+    SDL.fonts[font] = null;
+  };
+
+makeFontString(height, fontName) {
+      if (fontName.charAt(0) != "'" && fontName.charAt(0) != '"') {
+        // https://developer.mozilla.org/ru/docs/Web/CSS/font-family
+        // Font family names containing whitespace should be quoted.
+        // BTW, quote all font names is easier than searching spaces
+        fontName = '"' + fontName + '"';
+      }
+      return height + 'px ' + fontName + ', serif';
+    },
+```

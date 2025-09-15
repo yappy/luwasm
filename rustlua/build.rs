@@ -31,5 +31,5 @@ fn main() {
         ".*",
         "bind_emscripten.rs",
     );
-    bindgen(&["SDL/SDL.h"], ".*", "bind_sdl.rs");
+    bindgen(&["SDL/SDL.h", "SDL/SDL_ttf.h"], ".*", "bind_sdl.rs");
 }

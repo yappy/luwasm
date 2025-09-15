@@ -161,7 +161,7 @@ fn update() {
     }
 }
 
-fn draw(surface: &emapi::sdl::Surface) {
+fn render(surface: &emapi::sdl::Surface) {
     static COUNT: ::std::sync::atomic::AtomicI32 = ::std::sync::atomic::AtomicI32::new(0);
     let count = COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
@@ -177,14 +177,13 @@ fn main_loop(surface: &emapi::sdl::Surface) {
     if surface.must_lock() {
         surface.lock().expect("lock failed");
     }
-    draw(surface);
+    render(surface);
     if surface.must_lock() {
         surface.unlock();
     }
-    surface.flip().expect("flip failed");
 }
 
-fn main_loop_raw(surface: &emapi::sdl::Surface) {
+fn main_loop_raw(surface: &emapi::sdl::Surface, numfont: &emapi::sdl::Surface) {
     struct FpsState {
         fps: f64,
         start_time: f64,
@@ -200,7 +199,7 @@ fn main_loop_raw(surface: &emapi::sdl::Surface) {
 
     const FPS_UPDATE_PERIOD_MS: f64 = 2000.0;
 
-    FPS_STATE.with(|cell| {
+    let _fps = FPS_STATE.with(|cell| {
         let mut state = cell.borrow_mut();
 
         let now = emapi::emscripten::performance_now();
@@ -218,9 +217,16 @@ fn main_loop_raw(surface: &emapi::sdl::Surface) {
             state.frame_count = 0;
             log::trace!("fps: {:.1}", state.fps);
         }
+
+        state.fps
     });
 
+    // update & render
     main_loop(surface);
+    // draw fps
+    numfont.blit(surface).expect("blit failed");
+    // show as main canvas
+    surface.flip().expect("flip failed");
 }
 
 fn setup_main_loop() -> anyhow::Result<()> {
@@ -232,11 +238,15 @@ fn setup_main_loop() -> anyhow::Result<()> {
         emapi::sdl::flags::SDL_SWSURFACE | emapi::sdl::flags::SDL_DOUBLEBUF,
     )?;
 
+    emapi::sdl::ttf::init()?;
+    let font = emapi::sdl::ttf::open_font("monospace", 16)?;
+    let numfont = font.render("hello", emapi::sdl::Color::WHITE)?;
+
     // fps (not 0) does not work well
     // probably because of security issue?
     // fps=0 means to use requestAnimationFrame()
     emapi::emscripten::set_main_loop(0, move || {
-        main_loop_raw(&surface);
+        main_loop_raw(&surface, &numfont);
     });
 
     Ok(())
