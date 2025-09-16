@@ -183,7 +183,11 @@ fn main_loop(surface: &emapi::sdl::Surface) {
     }
 }
 
-fn main_loop_raw(surface: &emapi::sdl::Surface, numfont: &emapi::sdl::Surface) {
+fn main_loop_raw(
+    surface: &emapi::sdl::Surface,
+    numfont: &emapi::sdl::Surface,
+    img: &emapi::sdl::Surface,
+) {
     struct FpsState {
         fps: f64,
         start_time: f64,
@@ -224,6 +228,7 @@ fn main_loop_raw(surface: &emapi::sdl::Surface, numfont: &emapi::sdl::Surface) {
     // update & render
     main_loop(surface);
     // draw fps
+    img.blit(surface).expect("blit failed");
     numfont.blit(surface).expect("blit failed");
     // show as main canvas
     surface.flip().expect("flip failed");
@@ -239,14 +244,20 @@ fn setup_main_loop() -> anyhow::Result<()> {
     )?;
 
     emapi::sdl::ttf::init()?;
+    emapi::sdl::image::init()?;
+
     let font = emapi::sdl::ttf::open_font("monospace", 16)?;
     let numfont = font.render("hello", emapi::sdl::Color::WHITE)?;
+
+    log::info!("load img");
+    let img = emapi::sdl::image::load_from_memory(super::res::SAMPLE_IMG)?;
+    log::info!("load img OK");
 
     // fps (not 0) does not work well
     // probably because of security issue?
     // fps=0 means to use requestAnimationFrame()
     emapi::emscripten::set_main_loop(0, move || {
-        main_loop_raw(&surface, &numfont);
+        main_loop_raw(&surface, &numfont, &img);
     });
 
     Ok(())

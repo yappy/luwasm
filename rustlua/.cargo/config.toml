@@ -9,7 +9,7 @@ target = "wasm32-unknown-emscripten"
 # (in a --pre-js, for example) then you need to make sure
 # it uses closure annotations properly.
 #EMCC_CFLAGS = "--closure 1"
-#EMCC_CFLAGS = "-lidbfs.js"
+EMCC_CFLAGS = "-sSTB_IMAGE"
 
 [target.wasm32-unknown-emscripten]
 runner = "node"

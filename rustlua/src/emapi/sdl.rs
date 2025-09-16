@@ -243,3 +243,46 @@ pub mod ttf {
         Ok(Font(font))
     }
 }
+
+// -----------------------------------------------------------------------------
+
+pub mod image {
+    use anyhow::Context;
+
+    use super::ffi;
+    use std::ffi::CString;
+
+    // #define IMG_GetError SDL_GetError
+    use super::sdl_error as img_error;
+
+    pub fn init() -> anyhow::Result<()> {
+        // IMG_Init will do nothing and flags will be returned as is
+        let flags = ffi::IMG_InitFlags_IMG_INIT_JPG | ffi::IMG_InitFlags_IMG_INIT_PNG;
+        let flags = flags as i32;
+        let ret = unsafe { ffi::IMG_Init(flags) };
+        if ret != flags {
+            img_error().context("IMG_Init failed")?;
+        }
+
+        Ok(())
+    }
+
+    pub fn load(file: &str) -> anyhow::Result<super::Surface> {
+        let file = CString::new(file).unwrap();
+        let sf = unsafe { ffi::IMG_Load(file.as_ptr()) };
+        if sf.is_null() {
+            img_error().context("IMG_Load failed")?;
+        }
+
+        Ok(super::Surface(sf))
+    }
+
+    pub fn load_from_memory(bin: &[u8]) -> anyhow::Result<super::Surface> {
+        const TMP_PATH: &str = "/tmp/imgload.jpg";
+        // JS/WASM is single threaded
+        // It doesn't cause race conditions
+        std::fs::write(TMP_PATH, bin)?;
+
+        load(TMP_PATH)
+    }
+}
