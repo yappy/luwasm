@@ -47,19 +47,8 @@ impl Color {
     }
 }
 
-pub mod init {
-    #![allow(unused_imports)]
-    pub use super::ffi::SDL_INIT_AUDIO;
-    pub use super::ffi::SDL_INIT_EVERYTHING;
-    pub use super::ffi::SDL_INIT_HAPTIC;
-    pub use super::ffi::SDL_INIT_JOYSTICK;
-    pub use super::ffi::SDL_INIT_NOPARACHUTE;
-    pub use super::ffi::SDL_INIT_TIMER;
-    pub use super::ffi::SDL_INIT_VIDEO;
-}
-
-pub fn init(flags: u32) -> anyhow::Result<()> {
-    let ret = unsafe { ffi::SDL_Init(flags) };
+pub fn init() -> anyhow::Result<()> {
+    let ret = unsafe { ffi::SDL_Init(ffi::SDL_INIT_EVERYTHING) };
     if ret < 0 {
         sdl_error()?;
     }
@@ -278,7 +267,82 @@ pub mod image {
     }
 
     pub fn load_from_memory(bin: &[u8]) -> anyhow::Result<super::Surface> {
-        const TMP_PATH: &str = "/tmp/imgload.jpg";
+        const TMP_PATH: &str = "/tmp/imgload.bin";
+        // JS/WASM is single threaded
+        // It doesn't cause race conditions
+        std::fs::write(TMP_PATH, bin)?;
+
+        load(TMP_PATH)
+    }
+}
+
+pub mod mixer {
+    use anyhow::Context;
+
+    use super::ffi;
+    use std::ffi::CString;
+
+    // #define IMG_GetError SDL_GetError
+    use super::sdl_error as mixer_error;
+
+    pub fn init() -> anyhow::Result<()> {
+        // Mix_Init will do nothing and return MIX_INIT_OGG
+        let flags = ffi::MIX_InitFlags_MIX_INIT_OGG;
+        let flags = flags as i32;
+        let ret = unsafe { ffi::Mix_Init(flags) };
+        if ret != flags {
+            mixer_error().context("Mix_Init failed")?;
+        }
+
+        Ok(())
+    }
+
+    pub fn open_audio() -> anyhow::Result<()> {
+        let ret = unsafe {
+            ffi::Mix_OpenAudio(
+                ffi::MIX_DEFAULT_FREQUENCY as i32,
+                ffi::MIX_DEFAULT_FORMAT as u16,
+                ffi::MIX_DEFAULT_CHANNELS as i32,
+                1024, // default value in generated js code
+            )
+        };
+        if ret < 0 {
+            mixer_error().context("Mix_OpenAudio failed")?;
+        }
+
+        Ok(())
+    }
+
+    pub struct Chunk(*mut ffi::Mix_Chunk);
+
+    impl Drop for Chunk {
+        fn drop(&mut self) {
+            unsafe {
+                ffi::Mix_FreeChunk(self.0);
+            }
+        }
+    }
+
+    impl Chunk {
+        pub fn play(&self) -> bool {
+            let ret = unsafe { ffi::Mix_PlayChannelTimed(-1, self.0, 1, -1) };
+
+            ret >= 0
+        }
+    }
+
+    pub fn load(file: &str) -> anyhow::Result<Chunk> {
+        let file = CString::new(file).unwrap();
+        let chunk = unsafe { ffi::Mix_LoadWAV(file.as_ptr()) };
+        if chunk.is_null() {
+            mixer_error().context("Mix_LoadWAV failed")?;
+        }
+
+        Ok(Chunk(chunk))
+    }
+
+    pub fn load_from_memory(bin: &[u8]) -> anyhow::Result<Chunk> {
+        const TMP_PATH: &str = "/tmp/soundload.bin";
         // JS/WASM is single threaded
         // It doesn't cause race conditions
         std::fs::write(TMP_PATH, bin)?;

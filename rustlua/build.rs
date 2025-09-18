@@ -32,7 +32,12 @@ fn main() {
         "bind_emscripten.rs",
     );
     bindgen(
-        &["SDL/SDL.h", "SDL/SDL_ttf.h", "SDL/SDL_image.h"],
+        &[
+            "SDL/SDL.h",
+            "SDL/SDL_ttf.h",
+            "SDL/SDL_image.h",
+            "SDL/SDL_mixer.h",
+        ],
         ".*",
         "bind_sdl.rs",
     );

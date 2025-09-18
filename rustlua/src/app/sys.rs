@@ -187,6 +187,7 @@ fn main_loop_raw(
     surface: &emapi::sdl::Surface,
     numfont: &emapi::sdl::Surface,
     img: &emapi::sdl::Surface,
+    se: &emapi::sdl::mixer::Chunk,
 ) {
     struct FpsState {
         fps: f64,
@@ -220,6 +221,9 @@ fn main_loop_raw(
             state.start_time = now;
             state.frame_count = 0;
             log::trace!("fps: {:.1}", state.fps);
+
+            let b = se.play();
+            log::info!("play se: {b}");
         }
 
         state.fps
@@ -235,7 +239,7 @@ fn main_loop_raw(
 }
 
 fn setup_main_loop() -> anyhow::Result<()> {
-    emapi::sdl::init(emapi::sdl::init::SDL_INIT_VIDEO)?;
+    emapi::sdl::init()?;
     let surface = emapi::sdl::set_video_mode(
         640,
         480,
@@ -245,19 +249,23 @@ fn setup_main_loop() -> anyhow::Result<()> {
 
     emapi::sdl::ttf::init()?;
     emapi::sdl::image::init()?;
+    emapi::sdl::mixer::init()?;
+    emapi::sdl::mixer::open_audio()?;
 
     let font = emapi::sdl::ttf::open_font("monospace", 16)?;
     let numfont = font.render("hello", emapi::sdl::Color::WHITE)?;
 
-    log::info!("load img");
     let img = emapi::sdl::image::load_from_memory(super::res::SAMPLE_IMG)?;
     log::info!("load img OK");
+
+    let se = emapi::sdl::mixer::load_from_memory(super::res::SAMPLE_SE)?;
+    log::info!("load se OK");
 
     // fps (not 0) does not work well
     // probably because of security issue?
     // fps=0 means to use requestAnimationFrame()
     emapi::emscripten::set_main_loop(0, move || {
-        main_loop_raw(&surface, &numfont, &img);
+        main_loop_raw(&surface, &numfont, &img, &se);
     });
 
     Ok(())
